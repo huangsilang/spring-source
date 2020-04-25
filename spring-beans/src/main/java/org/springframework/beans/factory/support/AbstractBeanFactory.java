@@ -249,7 +249,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 		// Eagerly check singleton cache for manually registered singletons.
 		/**
-		 * 从单利池中去获取实例
+		 *
+		 * 第一次从单利池中去获取实例
 		 */
 		Object sharedInstance = getSingleton(beanName);
 		if (sharedInstance != null && args == null) {
@@ -322,9 +323,17 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				}
 
 				// Create bean instance.
+				/**
+				 * 判断要实例化的bean是不是单利的，spring默认是单利的
+				 * 第二次调用 getSingleton（）方法，第二次调用getSingleton（）方法会把当前正在创建的
+				 * 类放到set集合，然后反射创建这个实例
+				 */
 				if (mbd.isSingleton()) {
 					sharedInstance = getSingleton(beanName, () -> {
 						try {
+							/**
+							 * 完成对象的实例化，如果需要代理，则完成了代理
+							 */
 							return createBean(beanName, mbd, args);
 						}
 						catch (BeansException ex) {

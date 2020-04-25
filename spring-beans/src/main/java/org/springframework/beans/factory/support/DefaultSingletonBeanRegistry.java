@@ -164,6 +164,11 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	@Override
 	@Nullable
 	public Object getSingleton(String beanName) {
+		/**
+		 * 这里 allowEarlyReference的值是true 说明spring默认开启循环依赖
+		 *
+		 *
+		 */
 		return getSingleton(beanName, true);
 	}
 
@@ -189,7 +194,13 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 					ObjectFactory<?> singletonFactory = this.singletonFactories.get(beanName);
 					if (singletonFactory != null) {
 						singletonObject = singletonFactory.getObject();
+						/**
+						 * 放到三级缓存
+						 */
 						this.earlySingletonObjects.put(beanName, singletonObject);
+						/**
+						 * 从二级缓存中清除
+						 */
 						this.singletonFactories.remove(beanName);
 					}
 				}
@@ -226,6 +237,9 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 					this.suppressedExceptions = new LinkedHashSet<>();
 				}
 				try {
+					/**
+					 * 这里调用的是lambda表达式中的内容，也就是调用该方法时传进来的参数是 createBean（）这个方法
+					 */
 					singletonObject = singletonFactory.getObject();
 					newSingleton = true;
 				}

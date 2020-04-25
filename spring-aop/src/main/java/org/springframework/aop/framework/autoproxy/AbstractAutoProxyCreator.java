@@ -245,9 +245,17 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		Object cacheKey = getCacheKey(beanClass, beanName);
 
 		if (!StringUtils.hasLength(beanName) || !this.targetSourcedBeans.contains(beanName)) {
+			/**
+			 * advisedBeans存的是不需要被代理的类，有两种：
+			 * 1.已经被代理的类，比如：@Configuration 修饰的配置类
+			 * 2.不能被代理的类，比如：切面
+			 */
 			if (this.advisedBeans.containsKey(cacheKey)) {
 				return null;
 			}
+			/**
+			 * isInfrastructureClass(beanClass) 这个判断类是不是不能被代理的类，
+			 */
 			if (isInfrastructureClass(beanClass) || shouldSkip(beanClass, beanName)) {
 				this.advisedBeans.put(cacheKey, Boolean.FALSE);
 				return null;
@@ -296,6 +304,9 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		if (bean != null) {
 			Object cacheKey = getCacheKey(bean.getClass(), beanName);
 			if (this.earlyProxyReferences.remove(cacheKey) != bean) {
+				/**
+				 * 完成代理
+				 */
 				return wrapIfNecessary(bean, beanName, cacheKey);
 			}
 		}
