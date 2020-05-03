@@ -507,7 +507,11 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		try {
 			// Give BeanPostProcessors a chance to return a proxy instead of the target bean instance.
 			/**
-			 * 第一次调用后置处理器--aop（这行代码很重要）
+			 * 第一次调用后置处理器--aop（这行代码很重要），逻辑如下：
+			 * 判断这个类是不是需要代理，两种情况不需要代理
+			 * 1.已经代理过的不需要代理
+			 * 2.切面通知等的配置配不能被代理
+			 * 不需要被代理的类存放在一个集合里面
 			 */
 			Object bean = resolveBeforeInstantiation(beanName, mbdToUse);
 			if (bean != null) {
@@ -520,6 +524,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 
 		try {
+			/**
+			 * 创建对象
+			 */
 			Object beanInstance = doCreateBean(beanName, mbdToUse, args);
 			if (logger.isTraceEnabled()) {
 				logger.trace("Finished creating instance of bean '" + beanName + "'");
@@ -557,6 +564,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// Instantiate the bean.
 		BeanWrapper instanceWrapper = null;
 		if (mbd.isSingleton()) {
+			/**
+			 * 这个对象有没有被创建过
+			 */
 			instanceWrapper = this.factoryBeanInstanceCache.remove(beanName);
 		}
 		if (instanceWrapper == null) {
@@ -601,7 +611,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			 * 这里涉及到三个map
 			 * singletonObjects      一级缓存（单利池）
 			 * singletonFactories    二级缓存（存放的是一个beanfactory）
-			 * earlySingletonObjects 三级缓存和二级缓存类似
+			 * earlySingletonObjects 三级缓存和二级缓存类似缓存的是已经被代理的对象
 			 */
 			addSingletonFactory(beanName, () -> getEarlyBeanReference(beanName, mbd, bean));
 		}
@@ -613,6 +623,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			 * 填充属性，也就是所谓的自动注入
 			 */
 			populateBean(beanName, mbd, instanceWrapper);
+			/**
+			 * 实现bean的初始化，并完成代理
+			 */
 			exposedObject = initializeBean(beanName, exposedObject, mbd);
 		}
 		catch (Throwable ex) {

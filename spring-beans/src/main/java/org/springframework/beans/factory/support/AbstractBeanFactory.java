@@ -332,6 +332,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					sharedInstance = getSingleton(beanName, () -> {
 						try {
 							/**
+							 * 完成第七次和第八次后置处理器的调用
 							 * 完成对象的实例化，如果需要代理，则完成了代理
 							 */
 							return createBean(beanName, mbd, args);

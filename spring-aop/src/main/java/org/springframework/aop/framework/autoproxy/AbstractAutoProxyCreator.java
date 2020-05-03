@@ -357,7 +357,14 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		// Create proxy if we have advice.
 		Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(bean.getClass(), beanName, null);
 		if (specificInterceptors != DO_NOT_PROXY) {
+			/**
+			 * 完成代理前，先把需要代理的对象放到 advisedBeans 集合中，代表这个类不需要再代理了
+			 * 然后完成代理
+			 */
 			this.advisedBeans.put(cacheKey, Boolean.TRUE);
+			/**
+			 * 完成代理
+			 */
 			Object proxy = createProxy(
 					bean.getClass(), beanName, specificInterceptors, new SingletonTargetSource(bean));
 			this.proxyTypes.put(cacheKey, proxy.getClass());
@@ -458,6 +465,9 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		}
 
 		ProxyFactory proxyFactory = new ProxyFactory();
+		/**
+		 * 属性的拷贝
+		 */
 		proxyFactory.copyFrom(this);
 
 		if (!proxyFactory.isProxyTargetClass()) {
@@ -478,7 +488,9 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		if (advisorsPreFiltered()) {
 			proxyFactory.setPreFiltered(true);
 		}
-
+		/**
+		 * 选择cglib或jdk 实现动态代理
+		 */
 		return proxyFactory.getProxy(getProxyClassLoader());
 	}
 
