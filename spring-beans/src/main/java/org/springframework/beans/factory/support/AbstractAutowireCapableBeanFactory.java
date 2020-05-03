@@ -1214,12 +1214,24 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		if (instanceSupplier != null) {
 			return obtainFromSupplier(instanceSupplier, beanName);
 		}
-
+		/**
+		 * 判断这个方法是否是工厂方法，
+		 * 什么是工厂方法？
+		 * 当Config类中配置了 @Bean 时，@bean会配置在方法上面，spring会调用这个方法来创建bean
+		 * 这个方法就叫工厂方法
+		 */
 		if (mbd.getFactoryMethodName() != null) {
 			return instantiateUsingFactoryMethod(beanName, mbd, args);
 		}
 
 		// Shortcut when re-creating the same bean...
+		/**
+		 * 上面这句话可以翻译成 快速创建 bean
+		 * 因为spring创建一个对象，需要知道使用是什么方式去创建，如果你通过@Bean spring就能直接调用方法来创建
+		 * 如果 你之前已经解析过，就会把构造发放保存到 resolvedConstructorOrFactoryMethod 中，
+		 * spring就知道使用之前解析的构造方法或工厂方法来创建对象
+		 * resolved 表示是否有解析过
+		 */
 		boolean resolved = false;
 		boolean autowireNecessary = false;
 		if (args == null) {
@@ -1230,6 +1242,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 				}
 			}
 		}
+		/**
+		 * 单利的情况下这个方法永远不会执行
+		 */
 		if (resolved) {
 			if (autowireNecessary) {
 				return autowireConstructor(beanName, mbd, null, null);
@@ -1240,7 +1255,15 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 
 		// Candidate constructors for autowiring?
+		/**
+		 * 推断构造方法
+		 * spring 需要知道使用哪个构造方法来创建对象，spring有一套自己的算法
+		 * 这里只会返回一个，或者null 这两种情况
+		 */
 		Constructor<?>[] ctors = determineConstructorsFromBeanPostProcessors(beanClass, beanName);
+		/**
+		 * 如果已经 推断出构造方法，或者指定 为自动装配
+		 */
 		if (ctors != null || mbd.getResolvedAutowireMode() == AUTOWIRE_CONSTRUCTOR ||
 				mbd.hasConstructorArgumentValues() || !ObjectUtils.isEmpty(args)) {
 			return autowireConstructor(beanName, mbd, ctors, args);

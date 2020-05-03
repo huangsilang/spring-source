@@ -290,14 +290,28 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 		}
 
 		// Quick check on the concurrent map first, with minimal locking.
+		/**
+		 * 这一行代码的意思是之前从推断过的 集合中去获取已经推断出来的构造方法
+		 * 对于单利而言这一行代码没有意义，单利只创建一次，
+		 * 对于原型而言，前面已经推断过了，推断两次也没有意义
+		 * 猜测（具体待测试，目前的理论知识，没办法详细解释，细节也解释不到位）：
+		 * 		当A、B方法上都有@bean注解时，且A方法又调用了B方法，导致B方法会被创建两次
+		 *
+		 */
 		Constructor<?>[] candidateConstructors = this.candidateConstructorsCache.get(beanClass);
 		if (candidateConstructors == null) {
 			// Fully synchronized resolution now...
 			synchronized (this.candidateConstructorsCache) {
+				/**
+				 * 这里和上面那一行代码一样 再拿一遍，有可能是多线程的使用场景
+				 */
 				candidateConstructors = this.candidateConstructorsCache.get(beanClass);
 				if (candidateConstructors == null) {
 					Constructor<?>[] rawCandidates;
 					try {
+						/**
+						 * 拿到所有的构造方法
+						 */
 						rawCandidates = beanClass.getDeclaredConstructors();
 					}
 					catch (Throwable ex) {
@@ -305,21 +319,46 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 								"Resolution of declared constructors on bean Class [" + beanClass.getName() +
 								"] from ClassLoader [" + beanClass.getClassLoader() + "] failed", ex);
 					}
+					/**
+					 * candidates 这个list 保存的是合格的构造方法
+					 */
 					List<Constructor<?>> candidates = new ArrayList<>(rawCandidates.length);
+					/**
+					 * requiredConstructor 是必要的构造方法，和上面的 candidates是一个意思
+					 */
 					Constructor<?> requiredConstructor = null;
+					/**
+					 * 默认的构造方案
+					 */
 					Constructor<?> defaultConstructor = null;
+					/**
+					 * 这个方案不用管，Kotlin使用的，可以翻译为主要的构造方法，
+					 * java语言 永远为空
+					 */
 					Constructor<?> primaryConstructor = BeanUtils.findPrimaryConstructor(beanClass);
 					int nonSyntheticConstructors = 0;
+					/**
+					 * 循环所有的构造方法
+					 */
 					for (Constructor<?> candidate : rawCandidates) {
+						/**
+						 * 是否是一个合成的构造方案
+						 */
 						if (!candidate.isSynthetic()) {
 							nonSyntheticConstructors++;
 						}
 						else if (primaryConstructor != null) {
 							continue;
 						}
+						/**
+						 * 获取手动转配注解，理解为加了 @Autowired 注解
+						 */
 						MergedAnnotation<?> ann = findAutowiredAnnotation(candidate);
 						if (ann == null) {
 							Class<?> userClass = ClassUtils.getUserClass(beanClass);
+							/**
+							 * 理解 是否是一个内部类
+							 */
 							if (userClass != beanClass) {
 								try {
 									Constructor<?> superCtor =
@@ -331,31 +370,69 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 								}
 							}
 						}
+						/**
+						 *  如果是手动装配
+						 */
 						if (ann != null) {
+							/**
+							 *  如果有一个必要的构造方法了，就会有两个：
+							 *  	1.一个是加了 @Autowired的
+							 *  	2.一个是 requiredConstructor 必要的构造方法
+							 *  spring不知道 使用哪个，就会报错
+							 */
 							if (requiredConstructor != null) {
 								throw new BeanCreationException(beanName,
 										"Invalid autowire-marked constructor: " + candidate +
 										". Found constructor with 'required' Autowired annotation already: " +
 										requiredConstructor);
 							}
+							/**
+							 * 获取 @Autowired 的属性
+							 */
 							boolean required = determineRequiredStatus(ann);
+							/**
+							 * required 默认为true
+							 */
 							if (required) {
+								/**
+								 * 如果有一个合格的构造方法了，就会有两个：
+								 * 		1.一个是加了 @Autowired的
+								 * 		2.一个是 candidates 中合格的构造方法
+								 * 	pring不知道 使用哪个，就会报错
+								 */
 								if (!candidates.isEmpty()) {
 									throw new BeanCreationException(beanName,
 											"Invalid autowire-marked constructors: " + candidates +
 											". Found constructor with 'required' Autowired annotation: " +
 											candidate);
 								}
+								/**
+								 * 将这个加了 @Autowired 注解的构造方法指定为必要的构造方法
+								 */
 								requiredConstructor = candidate;
 							}
+							/**
+							 * 将这个加了 @Autowired 注解的构造方法 放入合格的构造方法集合中
+							 */
 							candidates.add(candidate);
 						}
+						/**
+						 * 如果这个构造方法没有指定自动装配，并且 这个构造方法没有参数，指定为
+						 * 默认的构造方法
+						 */
 						else if (candidate.getParameterCount() == 0) {
 							defaultConstructor = candidate;
 						}
 					}
+					/**
+					 * 如果有合格的构造方法
+					 * 按照上面的代码逻辑，这个方法不会进
+					 */
 					if (!candidates.isEmpty()) {
 						// Add default constructor to list of optional constructors, as fallback.
+						/**
+						 *  按照上面的代码逻辑，这个方法似乎不会进（还得再看看）
+						 */
 						if (requiredConstructor == null) {
 							if (defaultConstructor != null) {
 								candidates.add(defaultConstructor);
@@ -367,8 +444,14 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 										"default constructor to fall back to: " + candidates.get(0));
 							}
 						}
+						/**
+						 * candidateConstructors里面就是已经推断出来的构造方法
+						 */
 						candidateConstructors = candidates.toArray(new Constructor<?>[0]);
 					}
+					/**
+					 * 如果只有一个构造方法，且有参数，就推断出这个构造方法，也就是指定这个构造方法
+					 */
 					else if (rawCandidates.length == 1 && rawCandidates[0].getParameterCount() > 0) {
 						candidateConstructors = new Constructor<?>[] {rawCandidates[0]};
 					}
@@ -380,12 +463,18 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 						candidateConstructors = new Constructor<?>[] {primaryConstructor};
 					}
 					else {
+						/**
+						 * 如果没有推断出来就是 0个
+						 */
 						candidateConstructors = new Constructor<?>[0];
 					}
 					this.candidateConstructorsCache.put(beanClass, candidateConstructors);
 				}
 			}
 		}
+		/**
+		 * 将推断出来的一个构造方法返回，或者返回null，永远只返回一个构造方法，或者null
+		 */
 		return (candidateConstructors.length > 0 ? candidateConstructors : null);
 	}
 
