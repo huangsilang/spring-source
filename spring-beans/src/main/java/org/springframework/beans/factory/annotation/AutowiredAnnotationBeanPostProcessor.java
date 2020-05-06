@@ -286,6 +286,9 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 					throw new BeanCreationException(beanName, "Lookup method resolution failed", ex);
 				}
 			}
+			/**
+			 * 表示已经检查过是否有lookup，不管有没有都会加入进来
+			 */
 			this.lookupMethodsChecked.add(beanName);
 		}
 
@@ -320,7 +323,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 								"] from ClassLoader [" + beanClass.getClassLoader() + "] failed", ex);
 					}
 					/**
-					 * candidates 这个list 保存的是合格的构造方法
+					 * candidates 这个list 保存的是找出来的合格的构造方法
 					 */
 					List<Constructor<?>> candidates = new ArrayList<>(rawCandidates.length);
 					/**
@@ -342,9 +345,12 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 					 */
 					for (Constructor<?> candidate : rawCandidates) {
 						/**
-						 * 是否是一个合成的构造方案
+						 * 是否是一个合成的构造方法
 						 */
 						if (!candidate.isSynthetic()) {
+							/**
+							 * 没有就代表至少有一个标准的构造方法，合成构造方法是不能够用来创建对象的
+							 */
 							nonSyntheticConstructors++;
 						}
 						else if (primaryConstructor != null) {
@@ -413,6 +419,8 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 							}
 							/**
 							 * 将这个加了 @Autowired 注解的构造方法 放入合格的构造方法集合中
+							 * 如果 @Autowired 中的required=false，那么每次循环，都会加入candidates中
+							 * 也就是多个加了 @Autowired(required=false) 的构造方法 都会成为合格的构造方法，会进行第二次推断
 							 */
 							candidates.add(candidate);
 						}
@@ -424,14 +432,12 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 							defaultConstructor = candidate;
 						}
 					}
-					/**
-					 * 如果有合格的构造方法
-					 * 按照上面的代码逻辑，这个方法不会进
-					 */
+
 					if (!candidates.isEmpty()) {
 						// Add default constructor to list of optional constructors, as fallback.
 						/**
-						 *  按照上面的代码逻辑，这个方法似乎不会进（还得再看看）
+						 * 如果是多个构造方法加了  @Autowired(required=false)，并且默认构造方法不等于null，
+						 * 默认构造方法也会成为候选的构造方法
 						 */
 						if (requiredConstructor == null) {
 							if (defaultConstructor != null) {

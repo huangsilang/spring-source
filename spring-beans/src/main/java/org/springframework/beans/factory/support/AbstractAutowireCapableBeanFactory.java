@@ -571,6 +571,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 		if (instanceWrapper == null) {
 			/**
+			 * 推断构造方法，然后
 			 * 通过反射创建对象，不是bean
 			 */
 			instanceWrapper = createBeanInstance(beanName, mbd, args);
@@ -1259,13 +1260,19 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		 * 推断构造方法
 		 * spring 需要知道使用哪个构造方法来创建对象，spring有一套自己的算法
 		 * 这里只会返回一个，或者null 这两种情况
+		 * 这里我理解为手动装配的构造方法推断
 		 */
 		Constructor<?>[] ctors = determineConstructorsFromBeanPostProcessors(beanClass, beanName);
 		/**
-		 * 如果已经 推断出构造方法，或者指定 为自动装配
+		 * 如果已经 推断出构造方法，
+		 * 或者指定 为自动装配
+		 * 或者给构造方法指定了参数
 		 */
 		if (ctors != null || mbd.getResolvedAutowireMode() == AUTOWIRE_CONSTRUCTOR ||
 				mbd.hasConstructorArgumentValues() || !ObjectUtils.isEmpty(args)) {
+			/**
+			 * 再次推断构造方法
+			 */
 			return autowireConstructor(beanName, mbd, ctors, args);
 		}
 
@@ -1350,6 +1357,15 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			for (BeanPostProcessor bp : getBeanPostProcessors()) {
 				if (bp instanceof SmartInstantiationAwareBeanPostProcessor) {
 					SmartInstantiationAwareBeanPostProcessor ibp = (SmartInstantiationAwareBeanPostProcessor) bp;
+					/**
+					 * 推断构造方法，和注入模型有关
+					 * 如果是手动装配，有以下情况：
+					 * 1.如果没有提供构造方法，可用的构造方法为null，返回null
+					 * 2.提供了一个默认的构造方法，有且只有一个，返回null
+					 * 3，提供了多个构造方法，spring不知道用哪个，返回null
+					 * 4.多个构造方法且都配置了 @Autowired(required=true) 异常
+					 * 5.多个构造方法且都配置了 @Autowired(required=false) 返回多个
+					 */
 					Constructor<?>[] ctors = ibp.determineCandidateConstructors(beanClass, beanName);
 					if (ctors != null) {
 						return ctors;

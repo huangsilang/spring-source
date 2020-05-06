@@ -120,16 +120,35 @@ class ConstructorResolver {
 		BeanWrapperImpl bw = new BeanWrapperImpl();
 		this.beanFactory.initBeanWrapper(bw);
 
+		/**
+		 * 这个变量就是用来存，确定出来的构造方法
+		 */
 		Constructor<?> constructorToUse = null;
+		/**
+		 * 这个变量是用来存构造方法的参数的
+		 */
 		ArgumentsHolder argsHolderToUse = null;
+		/**
+		 * 使用的参数，这个参数最终会赋给上面 argsHolderToUse 中的数组
+		 */
 		Object[] argsToUse = null;
-
+		/**
+		 * 这个参数暂时 认为永远为null
+		 */
 		if (explicitArgs != null) {
 			argsToUse = explicitArgs;
 		}
 		else {
+			/**
+			 * 这个参数用来存 spring已经找出来的参数，但是不能直接使用，最终要经过转换
+			 * 这里只是存一个字符串的类，比如一个这样的字符串类：com.huang.xxx
+			 */
 			Object[] argsToResolve = null;
 			synchronized (mbd.constructorArgumentLock) {
+				/**
+				 * resolvedConstructorOrFactoryMethod 是否已经有了 这个构造方法
+				 * 对于单利来说，永远没有
+				 */
 				constructorToUse = (Constructor<?>) mbd.resolvedConstructorOrFactoryMethod;
 				if (constructorToUse != null && mbd.constructorArgumentsResolved) {
 					// Found a cached constructor...
@@ -139,6 +158,11 @@ class ConstructorResolver {
 					}
 				}
 			}
+			/**
+			 * argsToResolve 这个里面存的是 spring推断出来的构造方法的参数，是字符串类型的
+			 * argsToUse 这个存的是spring推断出来的构造方法真正要使用的参数，由 argsToResolve转换而来
+			 * resolvePreparedArguments 方法就是把 argsToResolve 转换成 argsToUse
+			 */
 			if (argsToResolve != null) {
 				argsToUse = resolvePreparedArguments(beanName, mbd, bw, constructorToUse, argsToResolve, true);
 			}
@@ -147,9 +171,18 @@ class ConstructorResolver {
 		if (constructorToUse == null || argsToUse == null) {
 			// Take specified constructors, if any.
 			Constructor<?>[] candidates = chosenCtors;
+			/**
+			 * 由三种情况candidates = null
+			 * 1.没有提供构造方法
+			 * 2.提供了默认构造方法，有且只有一个
+			 * 3.提供了多个构造方法，在第一次推断的时候spring不知道选哪个
+			 */
 			if (candidates == null) {
 				Class<?> beanClass = mbd.getBeanClass();
 				try {
+					/**
+					 * 理解为拿到所有的构造方法
+					 */
 					candidates = (mbd.isNonPublicAccessAllowed() ?
 							beanClass.getDeclaredConstructors() : beanClass.getConstructors());
 				}
@@ -159,7 +192,11 @@ class ConstructorResolver {
 							"] from ClassLoader [" + beanClass.getClassLoader() + "] failed", ex);
 				}
 			}
-
+			/**
+			 * 如果构造方法只有一个
+			 * 没有传参数给构造方法
+			 * 没有解析到构造方法传递参数的值
+			 */
 			if (candidates.length == 1 && explicitArgs == null && !mbd.hasConstructorArgumentValues()) {
 				Constructor<?> uniqueCandidate = candidates[0];
 				if (uniqueCandidate.getParameterCount() == 0) {
@@ -176,8 +213,15 @@ class ConstructorResolver {
 			// Need to resolve the constructor.
 			boolean autowiring = (chosenCtors != null ||
 					mbd.getResolvedAutowireMode() == AutowireCapableBeanFactory.AUTOWIRE_CONSTRUCTOR);
+			/**
+			 * 解析出来的参数
+			 */
 			ConstructorArgumentValues resolvedValues = null;
-
+			/**
+			 * 表示实例化的时候，我要找的那个构造方法中的参数最少要多少个，才能参与成为合格的构造方法的候选
+			 * 这个值，可以由explicitArgs的时候传，也可以在bd中设置，或者在xml中设置多个参数，
+			 * minNrOfArgs就是这个设置参数的个数的值，并不是对象中的构造方法中必须会有的参数
+			 */
 			int minNrOfArgs;
 			if (explicitArgs != null) {
 				minNrOfArgs = explicitArgs.length;
@@ -187,7 +231,11 @@ class ConstructorResolver {
 				resolvedValues = new ConstructorArgumentValues();
 				minNrOfArgs = resolveConstructorArguments(beanName, mbd, bw, cargs, resolvedValues);
 			}
-
+			/**
+			 * 先根据publib在最前面排序，
+			 * 然后在publib中 参数最多的在前面排序
+			 * 还有根据参数的精准度来排，例如：接口和类的排序，类在前
+			 */
 			AutowireUtils.sortConstructors(candidates);
 			int minTypeDiffWeight = Integer.MAX_VALUE;
 			Set<Constructor<?>> ambiguousConstructors = null;
