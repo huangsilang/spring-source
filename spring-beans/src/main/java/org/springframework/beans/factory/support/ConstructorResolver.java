@@ -240,22 +240,38 @@ class ConstructorResolver {
 			int minTypeDiffWeight = Integer.MAX_VALUE;
 			Set<Constructor<?>> ambiguousConstructors = null;
 			LinkedList<UnsatisfiedDependencyException> causes = null;
-
+			/**
+			 * 循环构造方法
+			 */
 			for (Constructor<?> candidate : candidates) {
+				/**
+				 * 获取构造方法中的参数类型
+				 */
 				Class<?>[] paramTypes = candidate.getParameterTypes();
-
+				/**
+				 * 如果确认出来了构造，并且构造方法有参数，并且参数的个数大于排在第一位的构造方法 就全部都不考虑后面的构造方法
+				 */
 				if (constructorToUse != null && argsToUse != null && argsToUse.length > paramTypes.length) {
 					// Already found greedy constructor that can be satisfied ->
 					// do not look any further, there are only less greedy constructors left.
 					break;
 				}
+				/**
+				 * 参数的个数少于最少要达到的参数个数，则不考虑
+				 */
 				if (paramTypes.length < minNrOfArgs) {
 					continue;
 				}
 
 				ArgumentsHolder argsHolder;
+				/**
+				 * 解析出来的参数不等于null
+				 */
 				if (resolvedValues != null) {
 					try {
+						/**
+						 * 获取所有的参数的名字
+						 */
 						String[] paramNames = ConstructorPropertiesChecker.evaluate(candidate, paramTypes.length);
 						if (paramNames == null) {
 							ParameterNameDiscoverer pnd = this.beanFactory.getParameterNameDiscoverer();
