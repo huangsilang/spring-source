@@ -1317,6 +1317,9 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			throws BeanDefinitionStoreException {
 
 		synchronized (this.mergedBeanDefinitions) {
+			/**
+			 * bd 转换成 RootBeanDefinition 以后保存在 mbd
+			 */
 			RootBeanDefinition mbd = null;
 			RootBeanDefinition previous = null;
 
