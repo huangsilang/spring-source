@@ -306,7 +306,13 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 
 	@Override
 	public void postProcessMergedBeanDefinition(RootBeanDefinition beanDefinition, Class<?> beanType, String beanName) {
+		/**
+		 * 查找所有生命周期回调方法-初始化和销毁
+		 */
 		super.postProcessMergedBeanDefinition(beanDefinition, beanType, beanName);
+		/**
+		 * 查找所有需要注入的点，这是针对 @Resource注解
+		 */
 		InjectionMetadata metadata = findResourceMetadata(beanName, beanType, null);
 		metadata.checkConfigMembers(beanDefinition);
 	}

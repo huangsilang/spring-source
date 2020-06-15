@@ -43,8 +43,13 @@ import org.springframework.util.ObjectUtils;
  */
 public class ConstructorArgumentValues {
 
+	/**
+	 * 有序的参数集合
+	 */
 	private final Map<Integer, ValueHolder> indexedArgumentValues = new LinkedHashMap<>();
-
+	/**
+	 * 无序的参数集合
+	 */
 	private final List<ValueHolder> genericArgumentValues = new ArrayList<>();
 
 
@@ -351,8 +356,14 @@ public class ConstructorArgumentValues {
 	@Nullable
 	public ValueHolder getArgumentValue(int index, @Nullable Class<?> requiredType, @Nullable String requiredName, @Nullable Set<ValueHolder> usedValueHolders) {
 		Assert.isTrue(index >= 0, "Index must not be negative");
+		/**
+		 * 这个是有序的参数，这两个集合的值是一样的，只有有序和无序的差别
+		 */
 		ValueHolder valueHolder = getIndexedArgumentValue(index, requiredType, requiredName);
 		if (valueHolder == null) {
+			/**
+			 * 无序的参数，没有指定就会获取无序的参数，这两个集合的值是一样的，只有有序和无序的差别
+			 */
 			valueHolder = getGenericArgumentValue(requiredType, requiredName, usedValueHolders);
 		}
 		return valueHolder;

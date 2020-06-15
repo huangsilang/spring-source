@@ -211,6 +211,9 @@ class ConstructorResolver {
 			}
 
 			// Need to resolve the constructor.
+			/**
+			 * 第一次已经推断出了构造方法，或者通过构造方法自动注入时为 true
+			 */
 			boolean autowiring = (chosenCtors != null ||
 					mbd.getResolvedAutowireMode() == AutowireCapableBeanFactory.AUTOWIRE_CONSTRUCTOR);
 			/**
@@ -227,8 +230,18 @@ class ConstructorResolver {
 				minNrOfArgs = explicitArgs.length;
 			}
 			else {
+				/**
+				 * cargs是程序员提供给spring 要使用的构造方法的参数，
+				 * 可以通过 mbd.setConstructorArgumentValues("xx") 来设置，但是设置这个参数，
+				 * 并不代表将来通过构造方法实例化时一定会用到这个参数，设置这个参数，
+				 * 以后可以确定 minNrOfArgs的值就是你设置的参数个数，
+				 * 如果你设置了两个参数，则默认的构造方法和只有一个参数的构造方法，是不会拿来实例化的
+				 */
 				ConstructorArgumentValues cargs = mbd.getConstructorArgumentValues();
 				resolvedValues = new ConstructorArgumentValues();
+				/**
+				 *  将cargs的值 赋值给 resolvedValues，根据cargs得到 minNrOfArgs， 最终的构造方法的参数最小要达到 minNrOfArgs个
+				 */
 				minNrOfArgs = resolveConstructorArguments(beanName, mbd, bw, cargs, resolvedValues);
 			}
 			/**
@@ -766,7 +779,10 @@ class ConstructorResolver {
 			String beanName, RootBeanDefinition mbd, @Nullable ConstructorArgumentValues resolvedValues,
 			BeanWrapper bw, Class<?>[] paramTypes, @Nullable String[] paramNames, Executable executable,
 			boolean autowiring, boolean fallback) throws UnsatisfiedDependencyException {
-
+		/**
+		 * 这个是类型转换的对象，把字符创转换成实体，比如：com.spring.xxx这个字符串
+		 * 转换成真正的xxx类
+		 */
 		TypeConverter customConverter = this.beanFactory.getCustomTypeConverter();
 		TypeConverter converter = (customConverter != null ? customConverter : bw);
 
@@ -775,15 +791,40 @@ class ConstructorResolver {
 		Set<String> autowiredBeanNames = new LinkedHashSet<>(4);
 
 		for (int paramIndex = 0; paramIndex < paramTypes.length; paramIndex++) {
+			/**
+			 * 获取参数类型
+			 */
 			Class<?> paramType = paramTypes[paramIndex];
+			/**
+			 * 拿到参数名字
+			 */
 			String paramName = (paramNames != null ? paramNames[paramIndex] : "");
 			// Try to find matching constructor argument value, either indexed or generic.
 			ConstructorArgumentValues.ValueHolder valueHolder = null;
 			if (resolvedValues != null) {
+				/**
+				 * 获取参数值，这是个包装类
+				 * valueHolder可能是一个具体的实例，也可能是一个字符串，因为我们set的时候有两种方式
+				 * 1.bd.set("xxx")
+				 * 2.bd.set(XXX.class)
+				 * 使用第一种方式时需要转换成具体的实例，下面有转换的逻辑
+				 * 如果构造方法的参数和程序员提供的参数 类型不一致，这里是获取不到 valueHolder 的，
+				 * 比如 程序员是这样设置的：
+				 * beanDefinition.setConstructorArgumentValues("com.xxx");
+				 * 而构造方法中是这样的
+				 * public yyy(XXX xxx); XXX是class类型的
+				 * 这样子这里是获取不到值的，就通过下面这个方法来获取，如果获取到的valueHolder是字符串类型的，
+				 * 就需要转换成class类型的，下面有转换的逻辑
+				 */
 				valueHolder = resolvedValues.getArgumentValue(paramIndex, paramType, paramName, usedValueHolders);
 				// If we couldn't find a direct match and are not supposed to autowire,
 				// let's try the next generic, untyped argument value as fallback:
 				// it could match after type conversion (for example, String -> int).
+				/**
+				 * 参考上面的注释
+				 * 如果上面根据类型（XXX.class）没获取到，然后再去 resolvedValues 里面拿
+				 * autowiring：第一次已经推断出了构造方法，或者通过构造方法自动注入时为 就不拿这个参数
+				 */
 				if (valueHolder == null && (!autowiring || paramTypes.length == resolvedValues.getArgumentCount())) {
 					valueHolder = resolvedValues.getGenericArgumentValue(null, null, usedValueHolders);
 				}
@@ -794,11 +835,17 @@ class ConstructorResolver {
 				usedValueHolders.add(valueHolder);
 				Object originalValue = valueHolder.getValue();
 				Object convertedValue;
+				/**
+				 * 已经被转换了
+				 */
 				if (valueHolder.isConverted()) {
 					convertedValue = valueHolder.getConvertedValue();
 					args.preparedArguments[paramIndex] = convertedValue;
 				}
 				else {
+					/**
+					 * 没有被转换就进行转换
+					 */
 					MethodParameter methodParam = MethodParameter.forExecutable(executable, paramIndex);
 					try {
 						convertedValue = converter.convertIfNecessary(originalValue, paramType, methodParam);
@@ -831,6 +878,9 @@ class ConstructorResolver {
 							"] - did you specify the correct bean references as arguments?");
 				}
 				try {
+					/**
+					 * 这行代码重要
+					 */
 					Object autowiredArgument = resolveAutowiredArgument(
 							methodParam, beanName, autowiredBeanNames, converter, fallback);
 					args.rawArguments[paramIndex] = autowiredArgument;

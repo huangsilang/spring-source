@@ -66,11 +66,17 @@ public class InjectionMetadata {
 
 
 	private static final Log logger = LogFactory.getLog(InjectionMetadata.class);
-
+	/**
+	 * 某个类
+	 */
 	private final Class<?> targetClass;
-
+	/**
+	 * 某个类中的属性集合 InjectedElement 中的 Member 可以是 方法 或者 字段 等
+	 */
 	private final Collection<InjectedElement> injectedElements;
-
+	/**
+	 * injectedElements 和 checkedElements 数据完全相同，最后是循环checkedElements 来完成属性注入
+	 */
 	@Nullable
 	private volatile Set<InjectedElement> checkedElements;
 

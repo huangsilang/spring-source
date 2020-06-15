@@ -576,6 +576,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			 */
 			instanceWrapper = createBeanInstance(beanName, mbd, args);
 		}
+		/**
+		 * 得到实例化出来的对象
+		 */
 		final Object bean = instanceWrapper.getWrappedInstance();
 		Class<?> beanType = instanceWrapper.getWrappedClass();
 		if (beanType != NullBean.class) {
@@ -586,6 +589,13 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		synchronized (mbd.postProcessingLock) {
 			if (!mbd.postProcessed) {
 				try {
+					/**
+					 * 第三次调用后置处理器
+					 * 通过后置处理器来应用合并之后的bd-目标
+					 * 这里一般是没有合并的，因为我们交给spring管理的类几乎是不会给他指定parentId的，只有给bd指定parentId才会进行合并
+					 * 所以这里几乎只有apply没有merged
+					 * 把类中的属性数据封装，方便 下面的 populateBean 方法进行属性注入
+					 */
 					applyMergedBeanDefinitionPostProcessors(mbd, beanType, beanName);
 				}
 				catch (Throwable ex) {

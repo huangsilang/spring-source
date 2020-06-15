@@ -1281,6 +1281,9 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 */
 	protected RootBeanDefinition getMergedLocalBeanDefinition(String beanName) throws BeansException {
 		// Quick check on the concurrent map first, with minimal locking.
+		/**
+		 * 第一次获取不到，不走if，走getMergedBeanDefinition 完成合并
+		 */
 		RootBeanDefinition mbd = this.mergedBeanDefinitions.get(beanName);
 		if (mbd != null && !mbd.stale) {
 			return mbd;
@@ -1331,6 +1334,9 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			if (mbd == null || mbd.stale) {
 				previous = mbd;
 				mbd = null;
+				/**
+				 * 合并的beanDefinition如果没有ParentName，就转换成 RootBeanDefinition
+				 */
 				if (bd.getParentName() == null) {
 					// Use copy of given root bean definition.
 					if (bd instanceof RootBeanDefinition) {
@@ -1341,14 +1347,23 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					}
 				}
 				else {
+					/**
+					 * 合并的beanDefinition如果设置了 ParentName
+					 */
 					// Child bean definition: needs to be merged with parent.
 					BeanDefinition pbd;
 					try {
 						String parentBeanName = transformedBeanName(bd.getParentName());
+						/**
+						 * 判断这个 parentBeanName 是不是自己
+						 */
 						if (!beanName.equals(parentBeanName)) {
 							pbd = getMergedBeanDefinition(parentBeanName);
 						}
 						else {
+							/**
+							 * 这个 parentBeanName 是自己的话
+							 */
 							BeanFactory parent = getParentBeanFactory();
 							if (parent instanceof ConfigurableBeanFactory) {
 								pbd = ((ConfigurableBeanFactory) parent).getMergedBeanDefinition(parentBeanName);
@@ -1365,7 +1380,13 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 								"Could not resolve parent bean definition '" + bd.getParentName() + "'", ex);
 					}
 					// Deep copy with overridden values.
+					/**
+					 * BeanDefinition 转换为 RootBeanDefinition
+					 */
 					mbd = new RootBeanDefinition(pbd);
+					/**
+					 * 属性覆盖合并，子类覆盖父类，最终合并成一个 RootBeanDefinition
+					 */
 					mbd.overrideFrom(bd);
 				}
 
