@@ -1,6 +1,5 @@
 package com.spring.huang;
 
-import com.spring.huang.service.Order;
 import com.spring.huang.service.User;
 import org.springframework.beans.MutablePropertyValues;
 import org.springframework.beans.factory.support.GenericBeanDefinition;
@@ -20,14 +19,16 @@ public class Test {
 		genericBeanDefinition1.setPropertyValues(propertyValues1);
 		ac.registerBeanDefinition("user",genericBeanDefinition1);
 		//ac.refresh();
-		GenericBeanDefinition genericBeanDefinition2 = new GenericBeanDefinition();
+		/*GenericBeanDefinition genericBeanDefinition2 = new GenericBeanDefinition();
 		genericBeanDefinition2.setBeanClass(Order.class);
 		MutablePropertyValues propertyValues2 = new MutablePropertyValues();
 		propertyValues2.add("name","李四");
 		genericBeanDefinition2.setPropertyValues(propertyValues2);
 		genericBeanDefinition2.setParentName("user");
-		ac.registerBeanDefinition("order",genericBeanDefinition2);
+		ac.registerBeanDefinition("order",genericBeanDefinition2);*/
 		ac.refresh();
+		User user = ac.getBean(User.class);
+		System.out.println(user);
 	}
 
 }

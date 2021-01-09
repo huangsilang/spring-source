@@ -1,9 +1,9 @@
 package org.springframework.huang;
 
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.ComponentScans;
 import org.springframework.stereotype.Component;
 
-@Component
-@ComponentScans("org.springframework.huang")
+@ComponentScan("org.springframework.huang")
 public class Config {
 }

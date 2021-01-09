@@ -8,8 +8,6 @@ import javax.annotation.Resources;
 
 public class test {
 
-	@Autowired
-	@Resources
 	public static void main(String[] args) {
 		AnnotationConfigApplicationContext annotationConfigApplicationContext =
 				new AnnotationConfigApplicationContext(Config.class);
