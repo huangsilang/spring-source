@@ -1,16 +1,19 @@
 package com.spring.huang;
 
+import com.spring.huang.config.Config;
 import com.spring.huang.service.User;
 import org.springframework.beans.MutablePropertyValues;
 import org.springframework.beans.factory.support.GenericBeanDefinition;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.context.annotation.DependsOn;
 
+@DependsOn
 public class Test {
 
 
 	public static void main(String[] args) {
 		AnnotationConfigApplicationContext ac =
-				new AnnotationConfigApplicationContext();
+				new AnnotationConfigApplicationContext(Config.class);
 		GenericBeanDefinition genericBeanDefinition1 = new GenericBeanDefinition();
 		genericBeanDefinition1.setBeanClass(User.class);
 		MutablePropertyValues propertyValues1 = new MutablePropertyValues();

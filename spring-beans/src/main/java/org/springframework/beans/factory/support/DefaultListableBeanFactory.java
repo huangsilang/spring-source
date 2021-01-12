@@ -859,12 +859,24 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			if (!bd.isAbstract() && bd.isSingleton() && !bd.isLazyInit()) {
 				/**
 				 * 是不是factoryBean
+				 * 下面的判断围绕的是 SmartFactoryBean ，是不是 SmartFactoryBean
 				 */
 				if (isFactoryBean(beanName)) {
+					/**
+					 * 是FactoryBean就通过&获取 FactoryBean
+					 * 我理解 在单例池中获取factoryBean是要通过 前缀加&来获取的，不通过&来获取就是factoryBean生产的bean
+					 */
 					Object bean = getBean(FACTORY_BEAN_PREFIX + beanName);
 					if (bean instanceof FactoryBean) {
 						final FactoryBean<?> factory = (FactoryBean<?>) bean;
+						/**
+						 * factoryBean默认是懒加载,即isEagerInit默认是false
+						 * 表示立即加载
+						 */
 						boolean isEagerInit;
+						/**
+						 * System.getSecurityManager()  安全管理器
+						 */
 						if (System.getSecurityManager() != null && factory instanceof SmartFactoryBean) {
 							isEagerInit = AccessController.doPrivileged((PrivilegedAction<Boolean>)
 											((SmartFactoryBean<?>) factory)::isEagerInit,
@@ -874,6 +886,9 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 							isEagerInit = (factory instanceof SmartFactoryBean &&
 									((SmartFactoryBean<?>) factory).isEagerInit());
 						}
+						/**
+						 * 如果是立即加载，就去创建bean
+						 */
 						if (isEagerInit) {
 							getBean(beanName);
 						}
@@ -882,6 +897,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 				else {
 					/**
 					 * 不是factoryBean就开始实例化普通的bean
+					 * 普通bean默认是非懒加载
 					 * 90%走这里
 					 */
 					getBean(beanName);
